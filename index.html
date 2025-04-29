@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>カロリー計算ツール</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    label { display: block; margin-top: 1rem; }
+    input, select { width: 100%; padding: 0.5rem; margin-top: 0.3rem; }
+    canvas { max-width: 400px; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>カロリー計算ツール</h1>
+
+  <label>性別
+    <select id="gender">
+      <option value="male">男性</option>
+      <option value="female">女性</option>
+    </select>
+  </label>
+
+  <label>年齢
+    <input type="number" id="age" />
+  </label>
+
+  <label>体重（kg）
+    <input type="number" id="weight" />
+  </label>
+
+  <label>身長（cm）
+    <input type="number" id="height" />
+  </label>
+
+  <label>運動レベル
+    <select id="activity">
+      <option value="1.2">ほとんど運動しない</option>
+      <option value="1.375">軽い運動</option>
+      <option value="1.55">中程度の運動</option>
+      <option value="1.725">激しい運動</option>
+      <option value="1.9">非常に激しい運動</option>
+    </select>
+  </label>
+
+  <label>1週間に減らす体重のパーセンテージ（最大1%）
+    <input type="number" step="0.1" id="weeklyLossPercent" />
+  </label>
+
+  <label>タンパク質（g/kg）
+    <input type="number" step="0.1" id="proteinPerKg" />
+  </label>
+
+  <label>脂質（％）
+    <input type="number" step="1" id="fatPercent" />
+  </label>
+
+  <button onclick="calculateCalories()">計算する</button>
+
+  <div id="results"></div>
+  <canvas id="pfcChart"></canvas>
+
+  <script>
+    function calculateCalories() {
+      const gender = document.getElementById('gender').value;
+      const age = parseFloat(document.getElementById('age').value);
+      const weight = parseFloat(document.getElementById('weight').value);
+      const height = parseFloat(document.getElementById('height').value);
+      const activity = parseFloat(document.getElementById('activity').value);
+      const weeklyLossPercent = parseFloat(document.getElementById('weeklyLossPercent').value);
+      const proteinPerKg = parseFloat(document.getElementById('proteinPerKg').value);
+      const fatPercent = parseFloat(document.getElementById('fatPercent').value) / 100;
+
+      let bmr;
+      if (gender === 'male') {
+        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+      } else {
+        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+      }
+
+      const tdee = bmr * activity;
+      const deficit = weight * weeklyLossPercent * 7200 / 7;
+      const intakeCalories = tdee - deficit;
+
+      const proteinG = proteinPerKg * weight;
+      const proteinCal = proteinG * 4;
+      const fatCal = intakeCalories * fatPercent;
+      const fatG = fatCal / 9;
+      const carbCal = intakeCalories - (proteinCal + fatCal);
+      const carbG = carbCal / 4;
+
+      document.getElementById('results').innerHTML = `
+        <p><strong>TDEE:</strong> ${tdee.toFixed(0)} kcal</p>
+        <p><strong>目標摂取カロリー:</strong> ${intakeCalories.toFixed(0)} kcal</p>
+        <p><strong>タンパク質:</strong> ${proteinCal.toFixed(0)} kcal (${proteinG.toFixed(1)} g)</p>
+        <p><strong>脂質:</strong> ${fatCal.toFixed(0)} kcal (${fatG.toFixed(1)} g)</p>
+        <p><strong>炭水化物:</strong> ${carbCal.toFixed(0)} kcal (${carbG.toFixed(1)} g)</p>
+      `;
+
+      const ctx = document.getElementById('pfcChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: [
+            `タンパク質 ${proteinCal.toFixed(0)}kcal (${proteinG.toFixed(1)}g)`,
+            `脂質 ${fatCal.toFixed(0)}kcal (${fatG.toFixed(1)}g)`,
+            `炭水化物 ${carbCal.toFixed(0)}kcal (${carbG.toFixed(1)}g)`
+          ],
+          datasets: [{
+            data: [proteinCal, fatCal, carbCal],
+            backgroundColor: ['#36A2EB', '#FF6384', '#FFCE56'],
+          }]
+        },
+        options: {
+          responsive: true,
+        }
+      });
+    }
+  </script>
+</body>
+</html>
