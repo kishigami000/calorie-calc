@@ -3,84 +3,181 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>カロリー計算ツール</title>
+  <title>カロリー計算</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
   <style>
-    body { font-family: sans-serif; padding: 2rem; }
-    label { display: block; margin-top: 1rem; }
-    input, select { width: 100%; padding: 0.5rem; margin-top: 0.3rem; }
-    canvas { max-width: 400px; margin-top: 2rem; }
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+    }
+    label {
+      display: block;
+      margin: 0;
+      white-space: nowrap;
+      text-align: left;
+    }
+    .input-with-unit {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.3rem;
+    }
+    input, select {
+      width: 60px;
+      padding: 0.5rem;
+      text-align: right;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      gap: 2rem;
+    }
+    .left, .right {
+      flex: 1;
+    }
+    canvas {
+      max-width: 100%;
+      margin-top: 2rem;
+    }
+    fieldset {
+      border: 2px solid #ccc;
+      padding: 0.8rem;
+      margin: 0;
+    }
+    legend {
+      font-weight: bold;
+      margin-top: 0;
+      padding: 0;
+    }
+    .radio-group {
+      display: block;
+      margin: 0;
+    }
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      padding-left: 0;
+      max-width: 100%;
+    }
+    .radio-group input {
+      margin-left: 0;
+      transform: scale(0.8);
+      width: auto;
+    }
+    #weightProgression {
+      margin-top: 0rem;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
-  <h1>カロリー計算ツール</h1>
+  <h1>減量時カロリー、PFC計算ツール</h1>
+  <div class="container">
+    <div class="left">
+      <fieldset>
+        <legend>性別</legend>
+        <div class="radio-group">
+          <label><input type="radio" name="gender" value="male" id="male" onchange="calculateCalories()" checked /> 男性</label>
+          <label><input type="radio" name="gender" value="female" id="female" onchange="calculateCalories()" /> 女性</label>
+        </div>
+      </fieldset>
 
-  <label>性別
-    <select id="gender">
-      <option value="male">男性</option>
-      <option value="female">女性</option>
-    </select>
-  </label>
+      <fieldset>
+        <legend>年齢</legend>
+        <label class="input-with-unit">
+          <input type="number" id="age" oninput="calculateCalories()" value="20" />
+          <span>歳</span>
+        </label>
+      </fieldset>
 
-  <label>年齢
-    <input type="number" id="age" />
-  </label>
+      <fieldset>
+        <legend>体重</legend>
+        <label class="input-with-unit">
+          <input type="number" id="weight" oninput="calculateCalories()" value="60" />
+          <span>kg</span>
+        </label>
+      </fieldset>
 
-  <label>体重（kg）
-    <input type="number" id="weight" />
-  </label>
+      <fieldset>
+        <legend>身長</legend>
+        <label class="input-with-unit">
+          <input type="number" id="height" oninput="calculateCalories()" value="160" />
+          <span>cm</span>
+        </label>
+      </fieldset>
 
-  <label>身長（cm）
-    <input type="number" id="height" />
-  </label>
+      <fieldset>
+        <legend>運動レベル</legend>
+        <div class="radio-group">
+          <label><input type="radio" name="activity" value="1.2" id="activity1" onchange="calculateCalories()" /> ほとんど運動しない</label>
+          <label><input type="radio" name="activity" value="1.375" id="activity2" onchange="calculateCalories()" /> 軽い運動（週1～3日）</label>
+          <label><input type="radio" name="activity" value="1.55" id="activity3" onchange="calculateCalories()" checked /> 中程度の運動（週3～5日）</label>
+          <label><input type="radio" name="activity" value="1.725" id="activity4" onchange="calculateCalories()" /> 激しい運動（週6～7日）</label>
+          <label><input type="radio" name="activity" value="1.9" id="activity5" onchange="calculateCalories()" /> 非常に激しい運動</label>
+        </div>
+      </fieldset>
 
-  <label>運動レベル
-    <select id="activity">
-      <option value="1.2">ほとんど運動しない</option>
-      <option value="1.375">軽い運動</option>
-      <option value="1.55">中程度の運動</option>
-      <option value="1.725">激しい運動</option>
-      <option value="1.9">非常に激しい運動</option>
-    </select>
-  </label>
+      <fieldset>
+        <legend>減量ペース(1週間で体重の◯%減量(最大1%推奨))</legend>
+        <label class="input-with-unit">
+          <input type="number" step="0.1" id="weeklyLossPercent" oninput="calculateCalories()" value="0.8" />
+          <span>%</span>
+        </label>
+      </fieldset>
+      <fieldset>
+        <legend>体重推移目標</legend>
+        <div id="weightProgression"></div>
+      </fieldset>
+    </div>
+    <div class="right">
+      <fieldset>
+        <legend>タンパク質(体重1kgあたり何g摂取するか)</legend>
+        <label class="input-with-unit">
+          <input type="number" step="0.1" id="proteinPerKg" oninput="calculateCalories()" value="1.8" />
+          <span>g</span>
+        </label>
+      </fieldset>
 
-  <label>1週間に減らす体重のパーセンテージ（最大1%）
-    <input type="number" step="0.1" id="weeklyLossPercent" />
-  </label>
+      <fieldset>
+        <legend>脂質(総カロリーのうち何%を脂質とするか)</legend>
+        <label class="input-with-unit">
+          <input type="number" step="1" id="fatPercent" oninput="calculateCalories()" value="20" />
+          <span>%</span>
+        </label>
+      </fieldset>
 
-  <label>タンパク質（g/kg）
-    <input type="number" step="0.1" id="proteinPerKg" />
-  </label>
-
-  <label>脂質（％）
-    <input type="number" step="1" id="fatPercent" />
-  </label>
-
-  <button onclick="calculateCalories()">計算する</button>
-
-  <div id="results"></div>
-  <canvas id="pfcChart"></canvas>
+      <div id="results"></div>
+      <canvas id="pfcChart"></canvas>
+    </div>
+  </div>
 
   <script>
+    let pfcChart = null;
+
     function calculateCalories() {
-      const gender = document.getElementById('gender').value;
+      const gender = document.querySelector('input[name="gender"]:checked');
       const age = parseFloat(document.getElementById('age').value);
       const weight = parseFloat(document.getElementById('weight').value);
       const height = parseFloat(document.getElementById('height').value);
-      const activity = parseFloat(document.getElementById('activity').value);
+      const activity = document.querySelector('input[name="activity"]:checked');
       const weeklyLossPercent = parseFloat(document.getElementById('weeklyLossPercent').value);
       const proteinPerKg = parseFloat(document.getElementById('proteinPerKg').value);
       const fatPercent = parseFloat(document.getElementById('fatPercent').value) / 100;
 
-      let bmr;
-      if (gender === 'male') {
-        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-      } else {
-        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+      if (!gender || isNaN(age) || isNaN(weight) || isNaN(height) || !activity || isNaN(weeklyLossPercent) || isNaN(proteinPerKg) || isNaN(fatPercent)) {
+        document.getElementById('results').innerHTML = `<p><strong>TDEE:</strong> -</p><p><strong>目標摂取カロリー:</strong> -</p><p><strong>タンパク質:</strong> -</p><p><strong>脂質:</strong> -</p><p><strong>炭水化物:</strong> -</p>`;
+        return;
       }
 
-      const tdee = bmr * activity;
-      const deficit = weight * weeklyLossPercent * 7200 / 7;
+      const bmr = gender.value === 'male'
+        ? 10 * weight + 6.25 * height - 5 * age + 5
+        : 10 * weight + 6.25 * height - 5 * age - 161;
+
+      const tdee = bmr * activity.value;
+      const deficit = weight * weeklyLossPercent / 100 * 7200 / 7;
       const intakeCalories = tdee - deficit;
 
       const proteinG = proteinPerKg * weight;
@@ -90,6 +187,9 @@
       const carbCal = intakeCalories - (proteinCal + fatCal);
       const carbG = carbCal / 4;
 
+      const proteinPercent = proteinCal / (proteinCal + fatCal + carbCal) * 100;
+      const carbPercent = carbCal / (proteinCal + fatCal + carbCal) * 100;
+
       document.getElementById('results').innerHTML = `
         <p><strong>TDEE:</strong> ${tdee.toFixed(0)} kcal</p>
         <p><strong>目標摂取カロリー:</strong> ${intakeCalories.toFixed(0)} kcal</p>
@@ -98,14 +198,29 @@
         <p><strong>炭水化物:</strong> ${carbCal.toFixed(0)} kcal (${carbG.toFixed(1)} g)</p>
       `;
 
+      // 減量体重推移を計算
+      let progressionText = ''; // progressionTextの初期化
+      for (let i = 1; i <= 26; i++) {
+        const weightAfter = weight * Math.pow(1 - weeklyLossPercent / 100, i);
+        let weekLabel = '';
+        if (i < 10) {
+          progressionText += `・${i}週後  : ${weightAfter.toFixed(1)} kg\n`;
+        } else {
+          progressionText += `・${i}週後: ${weightAfter.toFixed(1)} kg\n`;
+        }
+      }
+      document.getElementById('weightProgression').innerHTML = progressionText;
+
       const ctx = document.getElementById('pfcChart').getContext('2d');
-      new Chart(ctx, {
+      if (pfcChart) pfcChart.destroy();
+
+      pfcChart = new Chart(ctx, {
         type: 'pie',
         data: {
           labels: [
-            `タンパク質 ${proteinCal.toFixed(0)}kcal (${proteinG.toFixed(1)}g)`,
-            `脂質 ${fatCal.toFixed(0)}kcal (${fatG.toFixed(1)}g)`,
-            `炭水化物 ${carbCal.toFixed(0)}kcal (${carbG.toFixed(1)}g)`
+            `タンパク質\n${proteinCal.toFixed(0)}kcal\n(${proteinG.toFixed(1)}g)\n(${proteinPercent.toFixed(0)}%)`,
+            `脂質\n${fatCal.toFixed(0)}kcal\n(${fatG.toFixed(1)}g)\n(${(fatPercent * 100).toFixed(0)}%)`,
+            `炭水化物\n${carbCal.toFixed(0)}kcal\n(${carbG.toFixed(1)}g)\n(${carbPercent.toFixed(0)}%)`
           ],
           datasets: [{
             data: [proteinCal, fatCal, carbCal],
@@ -113,10 +228,24 @@
           }]
         },
         options: {
-          responsive: true,
-        }
+          animation: false,
+          responsive: false,
+          plugins: {
+            tooltip: { enabled: false },
+            legend: { display: false },
+            datalabels: {
+              display: true,
+              color: '#000',
+              font: { weight: 'bold', size: 12 },
+              formatter: (value, context) => context.chart.data.labels[context.dataIndex]
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
       });
     }
+
+    window.onload = calculateCalories;
   </script>
 </body>
 </html>
