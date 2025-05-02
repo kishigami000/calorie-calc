@@ -46,9 +46,6 @@
     .radio-group input {
       width: auto;
     }
-    #weightProgression, #weightProgression2{
-      font-family: monospace; /* 等幅フォントに */
-    }
     @media (max-width: 768px) {
       .container {
         flex-direction: column;
@@ -216,7 +213,7 @@
       for (let i = 1; i <= 52; i++) {
         const weightAfter = weight * Math.pow(1 - weeklyLossPercent / 100, i);
         progressionText += i < 10
-          ? `・  ${i}週後: ${weightAfter.toFixed(1)} kg<br>`
+          ? `・${i}週後: ${weightAfter.toFixed(1)} kg<br>`
           : `・${i}週後: ${weightAfter.toFixed(1)} kg<br>`;
       }
       progressionText += '※同カロリー継続で達成できるわけではないので注意<br>(体重落ちたらTDEEも下がるため)<br>';
@@ -231,7 +228,7 @@
         const cnttdee = cntbmr * activity.value;
         cntweight -= (cnttdee - intakeCalories) * 7 / 7200
         progressionText2 += i < 10
-          ? `・   ${i}週後: ${cntweight.toFixed(1)} kg<br>`
+          ? `・${i}週後: ${cntweight.toFixed(1)} kg<br>`
           : `・${i}週後: ${cntweight.toFixed(1)} kg<br>`;
       }
       document.getElementById('weightProgression2').innerHTML = progressionText2;
